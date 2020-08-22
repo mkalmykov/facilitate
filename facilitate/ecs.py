@@ -26,13 +26,13 @@ def ecs():
 @ecs.command()
 @click.option("--cluster")
 @click.option("--service")
-@click.option("--container")
 @click.option("--user", default="ec2-user")
 @click.option(
     "-i", "--identity-file", default="~/.ssh/id_rsa",
 )
+@click.argument("container", nargs=1)
 @click.argument("command", nargs=-1)
-def exec(cluster, service, container, user, identity_file, command):
+def exec(cluster, service, user, identity_file, container, command):
     normalized_command = " ".join(command)
 
     container_task_arns = _get_container_task_arns(cluster, service)
