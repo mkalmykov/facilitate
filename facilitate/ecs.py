@@ -36,12 +36,8 @@ def exec(cluster, service, container, user, identity_file, command):
     normalized_command = " ".join(command)
 
     container_task_arns = _get_container_task_arns(cluster, service)
-    container_instance_arns = _get_container_instance_arns(
-        cluster, container_task_arns, container
-    )
-    container_instance_ids = _get_container_instance_ids(
-        cluster, container_instance_arns
-    )
+    container_instance_arns = _get_container_instance_arns(cluster, container_task_arns, container)
+    container_instance_ids = _get_container_instance_ids(cluster, container_instance_arns)
     container_instance_ips = _get_container_instance_ips(container_instance_ids)
     target_instance_ip = _ask_target_instance_ip(container_instance_ips)
 
@@ -52,23 +48,17 @@ def exec(cluster, service, container, user, identity_file, command):
 
 def _get_container_task_arns(cluster, service):
     with Halo(
-        text="Obtaining ARNs of running ECS tasks with EC2 launch type",
-        **DEFAULT_PRELOADER_STYLES,
+        text="Obtaining ARNs of running ECS tasks with EC2 launch type", **DEFAULT_PRELOADER_STYLES,
     ) as sp:
         list_tasks_response = ecs_client.list_tasks(
-            cluster=cluster,
-            serviceName=service,
-            desiredStatus="RUNNING",
-            launchType="EC2",
+            cluster=cluster, serviceName=service, desiredStatus="RUNNING", launchType="EC2",
         )
         container_task_arns = list_tasks_response["taskArns"]
 
         sp.succeed()
 
     if len(container_task_arns) == 0:
-        click.echo(
-            click.style("\nCould not find target tasks. Exiting!", fg="red", bold=True)
-        )
+        click.echo(click.style("\nCould not find target tasks. Exiting!", fg="red", bold=True))
         sys.exit(1)
 
     for task_arn in container_task_arns:
@@ -78,12 +68,8 @@ def _get_container_task_arns(cluster, service):
 
 
 def _get_container_instance_arns(cluster, task_arns, container):
-    with Halo(
-        text="Obtaining container instance ARNs", **DEFAULT_PRELOADER_STYLES
-    ) as sp:
-        describe_tasks_response = ecs_client.describe_tasks(
-            cluster=cluster, tasks=task_arns,
-        )
+    with Halo(text="Obtaining container instance ARNs", **DEFAULT_PRELOADER_STYLES) as sp:
+        describe_tasks_response = ecs_client.describe_tasks(cluster=cluster, tasks=task_arns,)
         tasks_with_target_container = [
             t
             for t in describe_tasks_response["tasks"]
@@ -102,17 +88,13 @@ def _get_container_instance_arns(cluster, task_arns, container):
 
 
 def _get_container_instance_ids(cluster, container_instance_arns):
-    with Halo(
-        text="Obtaining container instance IDs", **DEFAULT_PRELOADER_STYLES
-    ) as sp:
+    with Halo(text="Obtaining container instance IDs", **DEFAULT_PRELOADER_STYLES) as sp:
         describe_container_instances_response = ecs_client.describe_container_instances(
             cluster=cluster, containerInstances=container_instance_arns,
         )
         container_instance_ids = [
             container_instance["ec2InstanceId"]
-            for container_instance in describe_container_instances_response[
-                "containerInstances"
-            ]
+            for container_instance in describe_container_instances_response["containerInstances"]
         ]
 
         sp.succeed()
@@ -124,9 +106,7 @@ def _get_container_instance_ids(cluster, container_instance_arns):
 
 
 def _get_container_instance_ips(container_instance_ids):
-    with Halo(
-        text="Obtaining container instance IP addresses", **DEFAULT_PRELOADER_STYLES,
-    ) as sp:
+    with Halo(text="Obtaining container instance IP addresses", **DEFAULT_PRELOADER_STYLES,) as sp:
         describe_instances_response = ec2_client.describe_instances(
             InstanceIds=container_instance_ids,
         )
